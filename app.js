@@ -129,16 +129,35 @@ const HK='flashcards_hist';let hist=[];try{hist=JSON.parse(localStorage.getItem(
 function logAns(c,r){hist.push({id:c.id,mat:c.mat,tema:c.tema,r,ts:Date.now()});try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}push()}
 const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 function streak(){const days=new Set(hist.map(h=>dayKey(h.ts)));let n=0,d=new Date();if(!days.has(dayKey(d)))d.setDate(d.getDate()-1);while(days.has(dayKey(d))){n++;d.setDate(d.getDate()-1)}return n}
+function donut(parts,size=170){const tot=parts.reduce((a,p)=>a+p.v,0);if(!tot)return '<p class="a">Sem respostas ainda.</p>';let a0=-Math.PI/2,paths='';const R=size/2,r=R*.58,c=R;
+ parts.forEach(p=>{if(!p.v)return;const a1=a0+2*Math.PI*p.v/tot;const big=a1-a0>Math.PI?1:0;const pt=(a,rr)=>[c+rr*Math.cos(a),c+rr*Math.sin(a)];
+  if(p.v===tot){paths+=`<circle cx="${c}" cy="${c}" r="${(R+r)/2}" fill="none" stroke="${p.c}" stroke-width="${R-r}"/>`}else{const [x1,y1]=pt(a0,R),[x2,y2]=pt(a1,R),[x3,y3]=pt(a1,r),[x4,y4]=pt(a0,r);
+  paths+=`<path d="M${x1} ${y1}A${R} ${R} 0 ${big} 1 ${x2} ${y2}L${x3} ${y3}A${r} ${r} 0 ${big} 0 ${x4} ${y4}Z" fill="${p.c}"><title>${p.n}: ${p.v}</title></path>`}a0=a1});
+ const ok=parts.filter(p=>p.good).reduce((a,p)=>a+p.v,0);
+ return `<div class="donutw"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${paths}<text x="${c}" y="${c-2}" text-anchor="middle" class="dn1">${Math.round(100*ok/tot)}%</text><text x="${c}" y="${c+16}" text-anchor="middle" class="dn2">de acerto</text></svg>
+ <div class="leg">${parts.map(p=>`<div><span class="sw" style="background:${p.c}"></span>${p.n}: <b>${p.v}</b> <span class="a">(${Math.round(100*p.v/tot)}%)</span></div>`).join('')}</div></div>`}
 function renderProg(){const today=dayKey(Date.now()),hoje=hist.filter(h=>dayKey(h.ts)===today),now=Date.now();
- const due=cards.filter(c=>c.seen&&c.due<=now).length,acc=l=>l.length?Math.round(100*l.filter(h=>h.r!=='again').length/l.length):0;
- const last30=[...Array(30)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);const k=dayKey(d);return[k,hist.filter(h=>dayKey(h.ts)===k).length]}),mx=Math.max(1,...last30.map(x=>x[1]));
- const bym={};hist.forEach(h=>{(bym[h.mat]=bym[h.mat]||[]).push(h)});
+ const due=cards.filter(c=>c.seen&&c.due<=now).length,acc=l=>l.length?Math.round(100*l.filter(h=>h.r==='good'||h.r==='easy').length/l.length):0;
+ const cnt=l=>Object.entries(RK).map(([k,[n,c]])=>({n,c,v:l.filter(h=>h.r===k).length,good:k==='good'||k==='easy'}));
+ const days=[...Array(21)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-20+i);const k=dayKey(d),l=hist.filter(h=>dayKey(h.ts)===k);return{k,l,lab:d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}});
+ const mx=Math.max(1,...days.map(d=>d.l.length)),W=640,H=170,bw=W/days.length;
+ const bars=days.map((d,i)=>{let y=H;return Object.keys(RK).map(k=>{const v=d.l.filter(h=>h.r===k).length;if(!v)return'';const h=(H-20)*v/mx;y-=h;return `<rect x="${i*bw+3}" y="${y}" width="${bw-6}" height="${h}" fill="${RK[k][1]}"><title>${d.lab} · ${RK[k][0]}: ${v}</title></rect>`}).join('')+(i%3===0?`<text x="${i*bw+bw/2}" y="${H+14}" text-anchor="middle" class="ax">${d.lab}</text>`:'')}).join('');
+ const pts=days.map((d,i)=>d.l.length?[i*bw+bw/2,H-(H-20)*acc(d.l)/100,acc(d.l),d.lab]:null).filter(Boolean);
+ const line=pts.length?`<polyline points="${pts.map(p=>p[0]+','+p[1]).join(' ')}" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linejoin="round"/>`+pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#7c3aed"><title>${p[3]}: ${p[2]}% de acerto</title></circle>`).join(''):'';
+ const grid=[0,50,100].map(v=>`<line x1="0" x2="${W}" y1="${H-(H-20)*v/100}" y2="${H-(H-20)*v/100}" class="gl"/><text x="${W-2}" y="${H-(H-20)*v/100-3}" text-anchor="end" class="ax">${v}%</text>`).join('');
+ const wk=l=>acc(l),last7=hist.filter(h=>h.ts>now-7*864e5),prev7=hist.filter(h=>h.ts<=now-7*864e5&&h.ts>now-14*864e5);
+ const trend=!last7.length?'Comece a responder para ver sua evolução 💪':!prev7.length?`Nesta semana: <b>${wk(last7)}%</b> de acerto em <b>${last7.length}</b> respostas.`:(wk(last7)>=wk(prev7)?`📈 <b>Evoluindo!</b> Acerto subiu de <b>${wk(prev7)}%</b> para <b>${wk(last7)}%</b> em relação à semana passada.`:`📉 Acerto caiu de <b>${wk(prev7)}%</b> para <b>${wk(last7)}%</b> — revise os temas em vermelho abaixo.`);
+ const mats=[...new Set(cards.map(c=>c.mat))].map(m=>{const cm=cards.filter(c=>c.mat===m),seen=cm.filter(c=>c.seen).length,hm=hist.filter(h=>h.mat===m);return{m,tot:cm.length,seen,acc:acc(hm),n:hm.length}}).sort((a,b)=>b.n-a.n||b.tot-a.tot);
+ const matRows=mats.map(x=>{const pct=Math.round(100*x.seen/x.tot),col=!x.n?'var(--muted)':x.acc>=80?'#16a34a':x.acc>=60?'#ca8a04':'#dc2626';return `<div class="mrow2"><div class="mname">${esc(x.m)}</div><div class="pbar"><div style="width:${pct}%"></div></div><div class="mnum">${x.seen}/${x.tot}</div><div class="mnum" style="color:${col}">${x.n?x.acc+'%':'–'}</div></div>`}).join('');
  const weak={};hist.slice(-1500).forEach(h=>{if(h.r==='again'||h.r==='hard'){const k=h.mat+' › '+h.tema;weak[k]=(weak[k]||0)+1}});
- $('progArea').innerHTML=`<div class="kpis"><div><b>${hoje.length}</b><span>respondidos hoje</span></div><div><b>${streak()} 🔥</b><span>dias seguidos</span></div><div><b>${acc(hoje)}%</b><span>acerto hoje</span></div><div><b>${due}</b><span>revisões pendentes</span></div></div>
- <h3>Últimos 30 dias</h3><div class="bars">${last30.map(([k,n])=>`<div title="${k}: ${n}" style="height:${4+96*n/mx}%"></div>`).join('')}</div>
- <h3>Acerto por matéria</h3>${Object.entries(bym).map(([m,l])=>`<div class="mrow"><span>${esc(m)}</span><span class="a">${l.length} respostas · <b>${acc(l)}%</b></span></div>`).join('')||'<p class="a">Ainda sem respostas.</p>'}
- <h3>Temas pra reforçar</h3>${Object.entries(weak).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,n])=>`<div class="mrow"><span>${esc(k)}</span><span style="color:#dc2626">${n} erros</span></div>`).join('')||'<p class="a">Nenhum ainda 👏</p>'}
- <h3>Últimas respostas</h3>${hist.slice(-15).reverse().map(h=>{const c=cards.find(x=>x.id===h.id);return `<div class="mrow"><span>${esc(plain(c?c.front:'').slice(0,70))}</span><span style="color:${RK[h.r][1]}">${RK[h.r][0]} · ${new Date(h.ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></div>`}).join('')}`}
+ $('progArea').innerHTML=`<div class="kpis"><div><b>${hoje.length}</b><span>respondidos hoje</span></div><div><b>${streak()} 🔥</b><span>dias seguidos</span></div><div><b>${hist.length}</b><span>respostas no total</span></div><div><b>${due}</b><span>revisões pendentes</span></div></div>
+ <div class="trend">${trend}</div>
+ <div class="two"><div><h3>🍕 Desempenho geral</h3>${donut(cnt(hist))}</div><div><h3>🍕 Hoje</h3>${donut(cnt(hoje))}</div></div>
+ <h3>📊 Questões por dia (últimos 21 dias)</h3><svg viewBox="0 0 ${W} ${H+20}" class="chart">${bars}</svg>
+ <h3>📈 Evolução do % de acerto</h3><svg viewBox="0 0 ${W} ${H+20}" class="chart">${grid}${line}${days.map((d,i)=>i%3===0?`<text x="${i*bw+bw/2}" y="${H+14}" text-anchor="middle" class="ax">${d.lab}</text>`:'').join('')}</svg>
+ <p class="a">Acerto = respostas “Bom” ou “Fácil”.</p>
+ <h3>📚 Andamento por matéria</h3><div class="mrow2 hdr"><div class="mname">Matéria</div><div>cartões vistos</div><div class="mnum">vistos</div><div class="mnum">acerto</div></div>${matRows}
+ <h3>🎯 Temas pra reforçar</h3>${Object.entries(weak).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,n])=>`<div class="mrow"><span>${esc(k)}</span><span style="color:#dc2626">${n} erros</span></div>`).join('')||'<p class="a">Nenhum ainda 👏</p>'}`}
 // ===== Backup =====
 $('bExp').onclick=()=>{const blob=new Blob([JSON.stringify({v:1,docs:[...docs.values()],hist},null,0)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='flashcards-backup-'+dayKey(Date.now())+'.json';a.click()};
 $('bImp').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());(j.docs||[]).forEach(d=>docs.set(d.id,d));const seen=new Set(hist.map(h=>h.id+h.ts));(j.hist||[]).forEach(h=>{if(!seen.has(h.id+h.ts))hist.push(h)});hist.sort((a,b)=>a.ts-b.ts);
