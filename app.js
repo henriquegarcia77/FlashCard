@@ -78,9 +78,10 @@ $('form').onsubmit=e=>{e.preventDefault();const type=$('type').value,F=$('front'
 function renderList(){const m=$('lMat').value,l=cards.filter(c=>!m||c.mat===m).sort((a,b)=>(b.t||0)-(a.t||0)),L=l.slice(0,300);
  $('listArea').innerHTML=l.length?L.map(c=>`<div class="item"><div><div class="q">${c.rank?`<span class="dot" style="background:${RK[c.rank][1]}"></span>`:'🆕 '}${esc(plain(c.front).slice(0,160))}${c.type==='cloze'?` <span class="pill">lacuna ${c.cl}</span>`:''}</div><div class="a"><i>${esc(c.mat)} › ${esc(c.tema)}</i></div></div><button class="x" data-id="${c.id}">✕</button></div>`).join('')+(l.length>300?`<div class="empty">Mostrando 300 de ${l.length}. Filtre por matéria.</div>`:''):'<div class="empty">Nenhum cartão.</div>'}
 $('listArea').onclick=e=>{const id=e.target.dataset&&e.target.dataset.id;if(!id)return;cards=cards.filter(c=>c.id!==id);if(DM.has(id)){const d={id,gone:1};docs.set(id,d);}else{docs.delete(id);}lsSave();push();renderList();stats()};
-function renderTemas(){$('temasArea').innerHTML=mats().map(m=>{const cm=cards.filter(c=>c.mat===m);
- return `<details><summary><b>${esc(m)}</b> <span class="a">${cm.length} cartões</span></summary>${temasOf(m).map(t=>{const ct=cm.filter(c=>c.tema===t),bad=ct.filter(c=>c.rank==='again'||c.rank==='hard').length;
- return `<div class="trow" data-m="${esc(m)}" data-t="${esc(t)}"><span>${esc(t)}</span><span class="a">${ct.length}${bad?` · <span style="color:#dc2626">${bad} difíceis</span>`:''}</span></div>`}).join('')}</details>`}).join('')}
+function renderTemas(){const MT=m=>Object.values(METAS[m]||{}).reduce((a,b)=>a+b,0),tot=Object.keys(METAS).reduce((a,m)=>a+MT(m),0);
+ $('temasArea').innerHTML=`<p class="a">Meta do edital: <b>${tot}</b> questões · você tem <b>${cards.length}</b> cartões</p>`+mats().map(m=>{const cm=cards.filter(c=>c.mat===m);
+ return `<details><summary><b>${esc(m)}</b> <span class="a">${cm.length} cartões${MT(m)?' · meta '+MT(m):''}</span></summary>${temasOf(m).map(t=>{const ct=cm.filter(c=>c.tema===t),bad=ct.filter(c=>c.rank==='again'||c.rank==='hard').length;
+ const mt=(METAS[m]||{})[t];return `<div class="trow" data-m="${esc(m)}" data-t="${esc(t)}"><span>${esc(t)}</span><span class="a">${ct.length}${mt?' / '+mt:''}${bad?` · <span style="color:#dc2626">${bad} difíceis</span>`:''}</span></div>`}).join('')}</details>`}).join('')}
 $('temasArea').onclick=e=>{const r=e.target.closest('.trow');if(!r)return;$('fMat').value=r.dataset.m;syncTema('fMat','fTema','Todos os temas');$('fTema').value=r.dataset.t;$('fMode').value='all';document.querySelector('[data-t=study]').click()};
 // ---- importar .apkg
 const loadJS=u=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=u;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
