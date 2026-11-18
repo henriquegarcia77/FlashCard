@@ -59,3 +59,22 @@ code{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding
 svg.chart{width:100%;height:auto;background:var(--bg);border-radius:10px;padding:6px}.ax{font:10px system-ui;fill:var(--muted)}.gl{stroke:var(--line);stroke-dasharray:3 4}
 .mrow2{display:grid;grid-template-columns:1.3fr 1.6fr 70px 52px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:.85rem}.mrow2.hdr{color:var(--muted);font-size:.75rem}
 .mnum{text-align:right;font-variant-numeric:tabular-nums}.pbar{height:9px;background:var(--bg);border-radius:6px;overflow:hidden}.pbar div{height:100%;background:var(--acc);border-radius:6px}
+
+/* ===== cachorrinhos ===== */
+.pup{position:fixed;bottom:6px;left:-220px;z-index:40;pointer-events:none;will-change:transform}
+.pup.walk{animation:pupWalk 22s linear forwards}.pup.ride{animation:pupWalk 11s linear forwards}
+.pup.rev{animation-name:pupWalkRev}.pup.rev svg{transform:scaleX(-1)}
+@keyframes pupWalk{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 260px))}}
+@keyframes pupWalkRev{from{transform:translateX(calc(100vw + 260px))}to{transform:translateX(0)}}
+.pup .lf{animation:leg .35s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:top center}
+.pup .lb{animation:leg .35s ease-in-out infinite alternate-reverse;transform-box:fill-box;transform-origin:top center}
+@keyframes leg{from{transform:rotate(-18deg)}to{transform:rotate(18deg)}}
+.pup .tail{animation:wag .25s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:right center}
+@keyframes wag{from{transform:rotate(-20deg)}to{transform:rotate(15deg)}}
+.pup .bob{animation:bob .35s ease-in-out infinite alternate}
+@keyframes bob{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+.pup .wh{animation:spin .5s linear infinite;transform-box:fill-box;transform-origin:center}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pup .ear{animation:ear .3s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:top center}
+@keyframes ear{from{transform:rotate(0)}to{transform:rotate(14deg)}}
+@media (prefers-reduced-motion:reduce){.pup{display:none}}

@@ -214,3 +214,33 @@ $('bSync').onclick=async()=>{dirty=true;await send();cloudInfo()};
 
 // salvamento automático periódico (a cada 30s, se houver algo pendente)
 setInterval(()=>{if(dirty)send()},30000);
+
+// ===== 🐶 salsichinhas passeando =====
+const STRIPES=(x,y,w,h,c1,c2,n)=>{let s='';for(let i=0;i<n;i++)s+=`<rect x="${x+i*w/n}" y="${y}" width="${w/n/2}" height="${h}" fill="${c1}"/>`;return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${h/2}" fill="${c2}"/>`+s};
+function dogSVG(fur,s1,s2){return `<g class="bob">
+ <path class="tail" d="M18 34 Q4 28 2 20" stroke="${fur}" stroke-width="5" fill="none" stroke-linecap="round"/>
+ <rect class="lb" x="24" y="44" width="7" height="16" rx="3.5" fill="${fur}"/><rect class="lf" x="34" y="44" width="7" height="16" rx="3.5" fill="${fur}"/>
+ <rect class="lf" x="82" y="44" width="7" height="16" rx="3.5" fill="${fur}"/><rect class="lb" x="92" y="44" width="7" height="16" rx="3.5" fill="${fur}"/>
+ <rect x="16" y="26" width="92" height="24" rx="12" fill="${fur}"/>
+ <clipPath id="cl${s1.slice(1)}"><rect x="34" y="24" width="62" height="28" rx="10"/></clipPath>
+ <g clip-path="url(#cl${s1.slice(1)})"><rect x="34" y="24" width="62" height="28" fill="${s2}"/>${[0,1,2,3,4,5,6].map(i=>`<rect x="${36+i*9}" y="24" width="4.5" height="28" fill="${s1}"/>`).join('')}</g>
+ <rect x="94" y="26" width="8" height="20" rx="3" fill="#d6455d"/>
+ <ellipse cx="114" cy="24" rx="15" ry="12" fill="${fur}"/><ellipse cx="128" cy="28" rx="9" ry="6" fill="${fur}"/>
+ <circle cx="135" cy="27" r="3" fill="#2a1d16"/><circle cx="117" cy="20" r="2.2" fill="#2a1d16"/>
+ <path class="ear" d="M106 16 q-8 4 -6 18 q6 2 10 -6 z" fill="#7a4a2e"/></g>`}
+function scooterSVG(){return `<g>
+ <circle class="wh" cx="40" cy="96" r="15" fill="#333"/><circle cx="40" cy="96" r="6" fill="#bbb"/>
+ <circle class="wh" cx="148" cy="96" r="15" fill="#333"/><circle cx="148" cy="96" r="6" fill="#bbb"/>
+ <path d="M22 92 Q22 62 60 62 L112 62 Q128 62 132 76 L140 92 Z" fill="#e0a25c"/>
+ <path d="M120 92 Q130 50 150 36 L158 40 Q148 60 152 92 Z" fill="#e0a25c"/>
+ <rect x="44" y="54" width="54" height="10" rx="5" fill="#3a3a3a"/>
+ <path d="M150 36 L146 18 M146 18 l-10 -4 M146 18 l10 -6" stroke="#555" stroke-width="3" fill="none" stroke-linecap="round"/>
+ <circle cx="160" cy="44" r="5" fill="#fff6c2" stroke="#c98d43"/></g>`}
+function launchPup(){if(document.hidden||document.querySelector('.pup'))return;
+ const ride=Math.random()<.3,rev=Math.random()<.4,el=document.createElement('div');
+ const pal=[['#a86b45','#d6455d','#fff'],['#c98d4f','#3b4aa0','#fff'],['#8d5636','#3b4aa0','#f3e9da']][Math.floor(Math.random()*3)];
+ el.className='pup '+(ride?'ride':'walk')+(rev?' rev':'');
+ el.innerHTML=ride?`<svg width="190" height="118" viewBox="0 0 190 118">${scooterSVG()}<g transform="translate(18,6) scale(.8)">${dogSVG(...pal).replace(/class="(lf|lb)"/g,'')}</g></svg>`
+                  :`<svg width="150" height="64" viewBox="0 0 150 64">${dogSVG(...pal)}</svg>`;
+ document.body.appendChild(el);el.addEventListener('animationend',e=>{if(e.target===el)el.remove()});}
+setTimeout(launchPup,4000);setInterval(launchPup,60000);
