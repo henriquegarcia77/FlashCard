@@ -33,3 +33,9 @@ details{border-bottom:1px solid var(--line);padding:10px 0}summary{cursor:pointe
 @media(max-width:520px){.kpis{grid-template-columns:repeat(2,1fr)}}
 h3{font-size:1rem;margin:22px 0 8px}.bars{display:flex;align-items:flex-end;gap:3px;height:90px}.bars div{flex:1;background:var(--acc);border-radius:3px 3px 0 0;opacity:.85}
 .mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+#love{position:fixed;right:18px;bottom:18px;width:58px;height:58px;border-radius:50%;border:0;background:#ff4d7d;font-size:28px;cursor:pointer;box-shadow:0 6px 18px rgba(255,77,125,.45);z-index:50;animation:beat 1.6s infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.12)}30%{transform:scale(1)}45%{transform:scale(1.08)}}
+#loveMsg{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(.6);background:#fff;color:#ff2d6a;font:700 1.8rem system-ui;padding:22px 34px;border-radius:20px;box-shadow:0 10px 40px rgba(255,45,106,.35);opacity:0;pointer-events:none;transition:all .35s;z-index:60;text-align:center}
+#loveMsg.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.fh{position:fixed;bottom:60px;font-size:24px;pointer-events:none;z-index:55;animation:up 2.2s ease-out forwards}
+@keyframes up{to{transform:translateY(-75vh) rotate(var(--r));opacity:0}}

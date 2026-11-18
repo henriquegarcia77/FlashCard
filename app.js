@@ -156,3 +156,7 @@ document.querySelector('[data-t=prog]').addEventListener('click',renderProg);
 // ===== Início =====
 fetch('deck.json').then(r=>r.json()).then(d=>{DECK=d;DM=new Map(DECK.map(c=>[c.id,c]));cards=lsLoad();refresh();checkDue();$('status').textContent='salvo neste aparelho · faça backup na aba Progresso'})
  .catch(()=>{cards=lsLoad();refresh();$('status').textContent='não consegui carregar deck.json (abra pelo site, não pelo arquivo)'});
+
+// ===== ❤️ =====
+document.getElementById('love').onclick=()=>{const m=document.getElementById('loveMsg');m.classList.add('show');clearTimeout(m._t);m._t=setTimeout(()=>m.classList.remove('show'),2500);
+ for(let i=0;i<14;i++){const s=document.createElement('span');s.className='fh';s.textContent=['❤️','💖','💕','💗'][i%4];s.style.left=(10+Math.random()*80)+'vw';s.style.setProperty('--r',(Math.random()*60-30)+'deg');s.style.animationDelay=(Math.random()*.6)+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),3000)}};
