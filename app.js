@@ -59,7 +59,7 @@ document.addEventListener('keydown',e=>{if($('study').classList.contains('hide')
  if(e.key===' '&&$('turn')){e.preventDefault();$('turn').click()}const k={1:'again',2:'hard',3:'good',4:'easy'}[e.key];if(k&&!$('turn')&&cur)rate(k)});
 function rate(r){const n=next(cur,r);Object.assign(cur,{rank:r,ivl:n.ivl,due:Date.now()+n.wait,seen:1});save(cur);
  queue.shift();if(n.wait<=10*MIN)queue.splice(Math.min(queue.length,r==='again'?3:6),0,cur.id);draw()}
-function save(c){const d=toDoc(c);docs.set(c.id,d);lsSave();}
+function save(c){const d=toDoc(c);d.u=Date.now();docs.set(c.id,d);lsSave();push();}
 // ---- criar
 const md=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/==(.+?)==/g,'<mark>$1</mark>').replace(/\n/g,'<br>');
 $('type').onchange=()=>{const cz=$('type').value==='cloze';$('lblF').textContent=cz?'Texto (selecione um trecho e toque em "Ocultar")':'Frente (pergunta)';$('lblB').textContent=cz?'Extra (opcional)':'Verso (resposta)';$('czTools').classList.toggle('hide',!cz)};
@@ -77,7 +77,7 @@ $('form').onsubmit=e=>{e.preventDefault();const type=$('type').value,F=$('front'
 // ---- lista / temas
 function renderList(){const m=$('lMat').value,l=cards.filter(c=>!m||c.mat===m).sort((a,b)=>(b.t||0)-(a.t||0)),L=l.slice(0,300);
  $('listArea').innerHTML=l.length?L.map(c=>`<div class="item"><div><div class="q">${c.rank?`<span class="dot" style="background:${RK[c.rank][1]}"></span>`:'🆕 '}${esc(plain(c.front).slice(0,160))}${c.type==='cloze'?` <span class="pill">lacuna ${c.cl}</span>`:''}</div><div class="a"><i>${esc(c.mat)} › ${esc(c.tema)}</i></div></div><button class="x" data-id="${c.id}">✕</button></div>`).join('')+(l.length>300?`<div class="empty">Mostrando 300 de ${l.length}. Filtre por matéria.</div>`:''):'<div class="empty">Nenhum cartão.</div>'}
-$('listArea').onclick=e=>{const id=e.target.dataset&&e.target.dataset.id;if(!id)return;cards=cards.filter(c=>c.id!==id);if(DM.has(id)){const d={id,gone:1};docs.set(id,d);}else{docs.delete(id);}lsSave();renderList();stats()};
+$('listArea').onclick=e=>{const id=e.target.dataset&&e.target.dataset.id;if(!id)return;cards=cards.filter(c=>c.id!==id);if(DM.has(id)){const d={id,gone:1};docs.set(id,d);}else{docs.delete(id);}lsSave();push();renderList();stats()};
 function renderTemas(){$('temasArea').innerHTML=mats().map(m=>{const cm=cards.filter(c=>c.mat===m);
  return `<details><summary><b>${esc(m)}</b> <span class="a">${cm.length} cartões</span></summary>${temasOf(m).map(t=>{const ct=cm.filter(c=>c.tema===t),bad=ct.filter(c=>c.rank==='again'||c.rank==='hard').length;
  return `<div class="trow" data-m="${esc(m)}" data-t="${esc(t)}"><span>${esc(t)}</span><span class="a">${ct.length}${bad?` · <span style="color:#dc2626">${bad} difíceis</span>`:''}</span></div>`}).join('')}</details>`}).join('')}
@@ -112,7 +112,7 @@ $('apkg').onchange=async e=>{const f=e.target.files[0];if(!f)return;const st=$('
   $('doImp').onclick=doImport}catch(err){st.textContent='Não consegui ler esse arquivo ('+err.message+').'}};
 async function doImport(){const sel=new Set([...document.querySelectorAll('#impPick input:checked')].map(i=>i.value)),have=new Set(cards.map(c=>c.id));
  const l=pending.filter(c=>sel.has(c.mat)&&!have.has(c.id));const st=$('impStatus');$('impPick').innerHTML='';
- l.forEach(c=>docs.set(c.id,c));cards.push(...l);lsSave();fillAll();stats();
+ l.forEach(c=>docs.set(c.id,c));cards.push(...l);lsSave();push();fillAll();stats();
  if(false){let i=0;const w=async()=>{while(i<l.length){const c=l[i++];try{await col.doc(c.id).set(c)}catch(e){}st.textContent=`Salvando na sua conta… ${Math.min(i,l.length)}/${l.length}`}};await Promise.all([w(),w(),w(),w()])}
  st.textContent=`✓ ${l.length} cartões importados.`;pending=[]}
 // ---- início
@@ -121,7 +121,7 @@ $('status').textContent='salvo neste navegador';
 
 // ===== Histórico de respostas =====
 const HK='flashcards_hist';let hist=[];try{hist=JSON.parse(localStorage.getItem(HK))||[]}catch(e){}
-function logAns(c,r){hist.push({id:c.id,mat:c.mat,tema:c.tema,r,ts:Date.now()});try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}}
+function logAns(c,r){hist.push({id:c.id,mat:c.mat,tema:c.tema,r,ts:Date.now()});try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}push()}
 const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 function streak(){const days=new Set(hist.map(h=>dayKey(h.ts)));let n=0,d=new Date();if(!days.has(dayKey(d)))d.setDate(d.getDate()-1);while(days.has(dayKey(d))){n++;d.setDate(d.getDate()-1)}return n}
 function renderProg(){const today=dayKey(Date.now()),hoje=hist.filter(h=>dayKey(h.ts)===today),now=Date.now();
@@ -154,9 +154,20 @@ function checkDue(){const n=cards.filter(c=>c.seen&&c.due<=Date.now()).length;do
 setInterval(checkDue,60e3);
 document.querySelector('[data-t=prog]').addEventListener('click',renderProg);
 // ===== Início =====
-fetch('deck.json').then(r=>r.json()).then(d=>{DECK=d;DM=new Map(DECK.map(c=>[c.id,c]));cards=lsLoad();refresh();checkDue();$('status').textContent='salvo neste aparelho · faça backup na aba Progresso'})
+fetch('deck.json').then(r=>r.json()).then(d=>{DECK=d;DM=new Map(DECK.map(c=>[c.id,c]));cards=lsLoad();refresh();checkDue();pull()})
  .catch(()=>{cards=lsLoad();refresh();$('status').textContent='não consegui carregar deck.json (abra pelo site, não pelo arquivo)'});
 
 // ===== ❤️ =====
 document.getElementById('love').onclick=()=>{const m=document.getElementById('loveMsg');m.classList.add('show');clearTimeout(m._t);m._t=setTimeout(()=>m.classList.remove('show'),2500);
  for(let i=0;i<14;i++){const s=document.createElement('span');s.className='fh';s.textContent=['❤️','💖','💕','💗'][i%4];s.style.left=(10+Math.random()*80)+'vw';s.style.setProperty('--r',(Math.random()*60-30)+'deg');s.style.animationDelay=(Math.random()*.6)+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),3000)}};
+
+// ===== Salvar no servidor (Cloudflare KV) =====
+let pushT=null,serverOk=false;
+function push(){clearTimeout(pushT);pushT=setTimeout(async()=>{try{const r=await fetch('api/state',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({v:1,docs:[...docs.values()],hist,at:Date.now()})});
+ serverOk=r.ok;$('status').textContent=r.ok?'☁️ salvo no site · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'⚠️ não salvou no site (salvo só neste aparelho)'}catch(e){$('status').textContent='⚠️ sem internet, salvo neste aparelho'}},1500)}
+async function pull(){try{const r=await fetch('api/state',{cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();serverOk=true;
+ (j.docs||[]).forEach(d=>{const cur=docs.get(d.id);if(!cur||(d.u||0)>=(cur.u||0))docs.set(d.id,d)});
+ const seen=new Set(hist.map(h=>h.id+'|'+h.ts));(j.hist||[]).forEach(h=>{if(!seen.has(h.id+'|'+h.ts))hist.push(h)});hist.sort((a,b)=>a.ts-b.ts);
+ lsSave();try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}cards=fromDocs([...docs.values()]);refresh();checkDue();
+ $('status').textContent='☁️ progresso carregado do site';push()}catch(e){$('status').textContent='⚠️ não consegui falar com o site, usando o que está neste aparelho'}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
