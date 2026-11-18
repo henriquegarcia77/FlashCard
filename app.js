@@ -37,7 +37,7 @@ $('fMat').onchange=()=>{UI.cur=null;$('fTema').value='';syncTema('fMat','fTema',
 $('fTema').onchange=$('fMode').onchange=()=>{UI.cur=null;build()};$('lMat').onchange=renderList;
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
- ['study','add','list','temas','imp','prog'].forEach(t=>$(t).classList.toggle('hide',t!==b.dataset.t));
+ ['study','add','list','temas','imp','prog','graf'].forEach(t=>$(t).classList.toggle('hide',t!==b.dataset.t));
  if(b.dataset.t==='study')build();if(b.dataset.t==='temas')renderTemas();if(b.dataset.t==='list')renderList()});
 // ---- estudo
 function filtered(){const m=$('fMat').value,t=$('fTema').value;return cards.filter(c=>(!m||c.mat===m)&&(!t||c.tema===t))}
@@ -176,7 +176,7 @@ $('bNotif').onclick=async()=>{if(!('Notification'in window))return $('remMsg').t
 function checkDue(){const n=cards.filter(c=>c.seen&&c.due<=Date.now()).length;document.title=(n?`(${n}) `:'')+'Flashcards · Escrevente TJSP';
  if(n&&remCfg().notif&&window.Notification&&Notification.permission==='granted'&&document.hidden){const last=+localStorage.getItem('fc_lastNotif')||0;if(Date.now()-last>3600e3){new Notification('📚 Flashcards',{body:`Você tem ${n} cartões pra revisar.`});localStorage.setItem('fc_lastNotif',Date.now())}}}
 setInterval(checkDue,60e3);
-document.querySelector('[data-t=prog]').addEventListener('click',renderProg);
+document.querySelector('[data-t=graf]').addEventListener('click',renderProg);
 // ===== Início =====
 fetch('deck.json').then(r=>r.json()).then(d=>{DECK=d;DM=new Map(DECK.map(c=>[c.id,c]));cards=lsLoad();refresh();checkDue();pull()})
  .catch(()=>{cards=lsLoad();refresh();$('status').textContent='não consegui carregar deck.json (abra pelo site, não pelo arquivo)'});
