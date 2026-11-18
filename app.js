@@ -203,3 +203,11 @@ async function pull(){try{if(localStorage.getItem('fc_dirty'))dirty=true;const r
  lsSave();try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}cards=fromDocs([...docs.values()]);refresh();checkDue();
  $('status').textContent='☁️ progresso carregado do site';backfill();if(dirty)send()}catch(e){$('status').textContent='⚠️ não consegui falar com o site, usando o que está neste aparelho'}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+
+// ===== painel da nuvem =====
+let lastSaved=0;
+async function cloudInfo(){const box=$('cloudBox');if(!box)return;try{const j=await (await fetch('api/state',{cache:'no-store'})).json();
+ box.innerHTML=`✅ <b>Conectado à nuvem</b><br>Respostas salvas: <b>${(j.hist||[]).length}</b> · cartões com progresso: <b>${(j.docs||[]).filter(d=>d.seen).length}</b><br>Último salvamento: <b>${j.at?new Date(j.at).toLocaleString('pt-BR'):'—'}</b>${dirty?'<br>⏳ há respostas sendo enviadas…':''}`}
+ catch(e){box.innerHTML='⚠️ Sem conexão com a nuvem agora. As respostas estão guardadas neste aparelho e serão enviadas automaticamente.'}}
+document.querySelector('[data-t=prog]').addEventListener('click',cloudInfo);
+$('bSync').onclick=async()=>{dirty=true;await send();cloudInfo()};

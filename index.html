@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="style.css"><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#c2410c"></head>
 <body><main>
 <h1>Flashcards · Escrevente TJSP</h1><p class="sub"><span id="count">0</span> cartões · <span class="status" id="status">carregando…</span></p>
-<div class="tabs"><button data-t="study" class="on">Estudar</button><button data-t="add">Criar</button><button data-t="temas">Temas</button><button data-t="list">Meus cartões</button><button data-t="imp">Importar Anki</button><button data-t="graf">📊 Gráficos</button><button data-t="prog">Lembretes e backup</button></div>
+<div class="tabs"><button data-t="study" class="on">Estudar</button><button data-t="add">Criar</button><button data-t="temas">Temas</button><button data-t="list">Meus cartões</button><button data-t="imp">Importar Anki</button><button data-t="graf">📊 Gráficos</button><button data-t="prog">☁️ Nuvem e lembretes</button></div>
 <section id="study" class="panel"><div id="stats" class="stats"></div>
 <div class="row" style="margin-top:0"><select id="fMat"></select><select id="fTema"></select>
 <select id="fMode"><option value="due">⏰ Só os que vencem agora</option><option value="all">Todos os cartões</option><option value="new">🆕 Só novos</option><option value="again">Só "Novamente"</option><option value="hard">Só "Difícil"</option><option value="good">Só "Bom"</option><option value="easy">Só "Fácil"</option></select></div>
@@ -24,8 +24,10 @@
 <section id="graf" class="panel hide"><div id="progArea"></div></section>
 <section id="prog" class="panel hide">
 <h3>⏰ Lembrete diário</h3><div class="row"><input type="time" id="remTime" style="width:auto"><button class="btn" id="bGcal">Adicionar no Google Agenda</button><button class="btn" id="bIcs">Baixar lembrete (.ics)</button><button class="btn" id="bNotif">Ativar notificações</button></div><p class="status" id="remMsg"></p>
-<h3>💾 Backup das respostas</h3><p class="a">O progresso fica salvo neste aparelho. Exporte um backup de vez em quando ou para passar para outro celular/computador.</p>
-<div class="row"><button class="btn pri" id="bExp">Exportar backup</button><label class="btn" style="margin:0;color:var(--ink)">Restaurar backup<input type="file" id="bImp" accept=".json" hidden></label></div><p class="status" id="bkMsg"></p></section>
+<h3>☁️ Salvo na nuvem</h3><div class="trend" id="cloudBox">Carregando…</div>
+<div class="row"><button class="btn pri" id="bSync">Salvar na nuvem agora</button></div>
+<p class="a" style="margin-top:14px">Tudo é salvo <b>automaticamente na nuvem</b> a cada resposta, e o site faz uma cópia de segurança por dia. Os botões abaixo são só uma cópia extra opcional.</p>
+<div class="row"><button class="btn" id="bExp">Baixar cópia extra</button><label class="btn" style="margin:0;color:var(--ink)">Restaurar cópia<input type="file" id="bImp" accept=".json" hidden></label></div><p class="status" id="bkMsg"></p></section>
 </main>
 <button id="love" aria-label="Coração">❤️</button><div id="loveMsg">Te amo, amor ❤️</div>
 <script src="topics.js"></script>
