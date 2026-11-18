@@ -211,3 +211,6 @@ async function cloudInfo(){const box=$('cloudBox');if(!box)return;try{const j=aw
  catch(e){box.innerHTML='⚠️ Sem conexão com a nuvem agora. As respostas estão guardadas neste aparelho e serão enviadas automaticamente.'}}
 document.querySelector('[data-t=prog]').addEventListener('click',cloudInfo);
 $('bSync').onclick=async()=>{dirty=true;await send();cloudInfo()};
+
+// salvamento automático periódico (a cada 30s, se houver algo pendente)
+setInterval(()=>{if(dirty)send()},30000);
