@@ -167,12 +167,19 @@ document.getElementById('love').onclick=()=>{const m=document.getElementById('lo
  for(let i=0;i<14;i++){const s=document.createElement('span');s.className='fh';s.textContent=['❤️','💖','💕','💗'][i%4];s.style.left=(10+Math.random()*80)+'vw';s.style.setProperty('--r',(Math.random()*60-30)+'deg');s.style.animationDelay=(Math.random()*.6)+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),3000)}};
 
 // ===== Salvar no servidor (Cloudflare KV) =====
-let pushT=null,serverOk=false;
-function push(){clearTimeout(pushT);pushT=setTimeout(async()=>{try{const r=await fetch('api/state',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({v:1,docs:[...docs.values()],hist,ui:UI,at:Date.now()})});
- serverOk=r.ok;$('status').textContent=r.ok?'☁️ salvo no site · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'⚠️ não salvou no site (salvo só neste aparelho)'}catch(e){$('status').textContent='⚠️ sem internet, salvo neste aparelho'}},1500)}
-async function pull(){try{const r=await fetch('api/state',{cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();serverOk=true;
+let pushT=null,serverOk=false,dirty=false,fails=0;
+const payload=()=>JSON.stringify({v:1,docs:[...docs.values()],hist,ui:UI,at:Date.now()});
+function push(){dirty=true;try{localStorage.setItem('fc_dirty','1')}catch(e){}clearTimeout(pushT);pushT=setTimeout(send,2000)}
+async function send(){if(!dirty)return;try{const r=await fetch('api/state',{method:'PUT',headers:{'content-type':'application/json'},body:payload(),keepalive:true});if(!r.ok)throw 0;
+ dirty=false;fails=0;try{localStorage.removeItem('fc_dirty')}catch(e){}serverOk=true;$('status').textContent='☁️ salvo no site · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+ catch(e){fails++;$('status').textContent='⚠️ ainda não salvou no site (tentando de novo…) — guardado neste aparelho';clearTimeout(pushT);pushT=setTimeout(send,Math.min(60000,3000*fails))}}
+function flush(){if(!dirty)return;try{navigator.sendBeacon('api/state',new Blob([payload()],{type:'application/json'}))}catch(e){}}
+window.addEventListener('pagehide',flush);document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
+window.addEventListener('online',()=>{if(dirty)send()});
+window.addEventListener('beforeunload',e=>{if(dirty){flush()}});
+async function pull(){try{if(localStorage.getItem('fc_dirty'))dirty=true;const r=await fetch('api/state',{cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();serverOk=true;
  (j.docs||[]).forEach(d=>{const cur=docs.get(d.id);if(!cur||(d.u||0)>=(cur.u||0))docs.set(d.id,d)});
  if(j.ui&&(j.ui.u||0)>(UI.u||0)){UI=j.ui;try{localStorage.setItem('fc_ui',JSON.stringify(UI))}catch(e){}}const seen=new Set(hist.map(h=>h.id+'|'+h.ts));(j.hist||[]).forEach(h=>{if(!seen.has(h.id+'|'+h.ts))hist.push(h)});hist.sort((a,b)=>a.ts-b.ts);
  lsSave();try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}cards=fromDocs([...docs.values()]);refresh();checkDue();
- $('status').textContent='☁️ progresso carregado do site';push()}catch(e){$('status').textContent='⚠️ não consegui falar com o site, usando o que está neste aparelho'}}
+ $('status').textContent='☁️ progresso carregado do site';if(dirty)send()}catch(e){$('status').textContent='⚠️ não consegui falar com o site, usando o que está neste aparelho'}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
