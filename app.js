@@ -61,7 +61,7 @@ function draw(){stats();
  $('turn').onclick=show}
 document.addEventListener('keydown',e=>{if($('study').classList.contains('hide')||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
  if(e.key===' '&&$('turn')){e.preventDefault();$('turn').click()}const k={1:'again',2:'hard',3:'good',4:'easy'}[e.key];if(k&&!$('turn')&&cur)rate(k)});
-function rate(r){const n=next(cur,r);Object.assign(cur,{rank:r,ivl:n.ivl,due:Date.now()+n.wait,seen:1});save(cur);
+function rate(r){const n=next(cur,r);Object.assign(cur,{rank:r,ivl:n.ivl,due:Date.now()+n.wait,seen:1});logAns(cur,r);save(cur);
  queue.shift();if(n.wait<=10*MIN)queue.splice(Math.min(queue.length,r==='again'?3:6),0,cur.id);draw()}
 function save(c){const d=toDoc(c);d.u=Date.now();docs.set(c.id,d);lsSave();push();}
 // ---- criar
@@ -126,6 +126,7 @@ $('status').textContent='salvo neste navegador';
 
 // ===== Histórico de respostas =====
 const HK='flashcards_hist';let hist=[];try{hist=JSON.parse(localStorage.getItem(HK))||[]}catch(e){}
+function backfill(){const has=new Set(hist.map(h=>h.id));let n=0;docs.forEach(d=>{if(d.rank&&d.u&&!has.has(d.id)){const c=cards.find(x=>x.id===d.id);hist.push({id:d.id,mat:c?c.mat:'',tema:c?c.tema:'',r:d.rank,ts:d.u});n++}});if(n){hist.sort((a,b)=>a.ts-b.ts);try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}push()}}
 function logAns(c,r){hist.push({id:c.id,mat:c.mat,tema:c.tema,r,ts:Date.now()});try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}push()}
 const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 function streak(){const days=new Set(hist.map(h=>dayKey(h.ts)));let n=0,d=new Date();if(!days.has(dayKey(d)))d.setDate(d.getDate()-1);while(days.has(dayKey(d))){n++;d.setDate(d.getDate()-1)}return n}
@@ -200,5 +201,5 @@ async function pull(){try{if(localStorage.getItem('fc_dirty'))dirty=true;const r
  (j.docs||[]).forEach(d=>{const cur=docs.get(d.id);if(!cur||(d.u||0)>=(cur.u||0))docs.set(d.id,d)});
  if(j.ui&&(j.ui.u||0)>(UI.u||0)){UI=j.ui;try{localStorage.setItem('fc_ui',JSON.stringify(UI))}catch(e){}}const seen=new Set(hist.map(h=>h.id+'|'+h.ts));(j.hist||[]).forEach(h=>{if(!seen.has(h.id+'|'+h.ts))hist.push(h)});hist.sort((a,b)=>a.ts-b.ts);
  lsSave();try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}cards=fromDocs([...docs.values()]);refresh();checkDue();
- $('status').textContent='☁️ progresso carregado do site';if(dirty)send()}catch(e){$('status').textContent='⚠️ não consegui falar com o site, usando o que está neste aparelho'}}
+ $('status').textContent='☁️ progresso carregado do site';backfill();if(dirty)send()}catch(e){$('status').textContent='⚠️ não consegui falar com o site, usando o que está neste aparelho'}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
