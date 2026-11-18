@@ -33,8 +33,8 @@ function fillSel(sel,opts,first){const v=sel.value;sel.innerHTML=(first?`<option
 function fillAll(){fillSel($('mat'),mats());fillSel($('fMat'),mats(),'Todas as matérias');fillSel($('lMat'),mats(),'Todas as matérias');syncTema('mat','tema');syncTema('fMat','fTema','Todos os temas')}
 function syncTema(m,t,first){fillSel($(t),$(m).value?temasOf($(m).value):[],first)}
 $('mat').onchange=()=>syncTema('mat','tema');
-$('fMat').onchange=()=>{$('fTema').value='';syncTema('fMat','fTema','Todos os temas');build()};
-$('fTema').onchange=$('fMode').onchange=build;$('lMat').onchange=renderList;
+$('fMat').onchange=()=>{UI.cur=null;$('fTema').value='';syncTema('fMat','fTema','Todos os temas');build()};
+$('fTema').onchange=$('fMode').onchange=()=>{UI.cur=null;build()};$('lMat').onchange=renderList;
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
  ['study','add','list','temas','imp','prog'].forEach(t=>$(t).classList.toggle('hide',t!==b.dataset.t));
@@ -43,12 +43,16 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
 function filtered(){const m=$('fMat').value,t=$('fTema').value;return cards.filter(c=>(!m||c.mat===m)&&(!t||c.tema===t))}
 function build(){const now=Date.now(),mode=$('fMode').value;
  let l=filtered();if(mode==='due')l=l.filter(c=>!c.due||c.due<=now);else if(mode!=='all')l=l.filter(c=>mode==='new'?!c.rank:c.rank===mode);
- queue=l.sort((a,b)=>(a.due||0)-(b.due||0)||Math.random()-.5).map(c=>c.id);draw()}
+ queue=l.sort((a,b)=>(a.due||0)-(b.due||0)||Math.random()-.5).map(c=>c.id);
+ const sc=UI.cur;if(sc){const i=queue.indexOf(sc);if(i>0){queue.splice(i,1);queue.unshift(sc)}}draw()}
+let UI={};try{UI=JSON.parse(localStorage.getItem('fc_ui'))||{}}catch(e){}
+function saveUI(){UI.fMat=$('fMat').value;UI.fTema=$('fTema').value;UI.fMode=$('fMode').value;UI.cur=cur&&queue[0]===cur.id?cur.id:UI.cur;UI.u=Date.now();try{localStorage.setItem('fc_ui',JSON.stringify(UI))}catch(e){}}
+function applyUI(){if(UI.fMat!=null&&[...$('fMat').options].some(o=>o.value===UI.fMat)){$('fMat').value=UI.fMat;syncTema('fMat','fTema','Todos os temas')}if(UI.fTema!=null&&[...$('fTema').options].some(o=>o.value===UI.fTema))$('fTema').value=UI.fTema;if(UI.fMode)$('fMode').value=UI.fMode}
 function stats(){const l=filtered(),now=Date.now(),n=k=>l.filter(c=>c.rank===k).length;
  $('stats').innerHTML=`<span>⏰ Pra revisar: <b>${l.filter(c=>!c.due||c.due<=now).length}</b></span><span>🆕 Novos: <b>${l.filter(c=>!c.rank).length}</b></span>`+Object.entries(RK).map(([k,[n2,co]])=>`<span style="color:${co}">${n2}: <b>${n(k)}</b></span>`).join('');$('count').textContent=cards.length}
 function draw(){stats();
  if(!queue.length){$('studyArea').innerHTML=`<div class="empty">${cards.length?'Nada pra revisar agora nesse filtro 🎉<br>Escolha "Todos os cartões" pra estudar mesmo assim.':'Crie cartões na aba "Criar" ou importe um baralho do Anki na aba "Importar".'}</div>`;return}
- cur=cards.find(x=>x.id===queue[0]);if(!cur){queue.shift();return draw()}
+ cur=cards.find(x=>x.id===queue[0]);if(!cur){queue.shift();return draw()}UI.cur=cur.id;saveUI();if(!draw._t){draw._t=1}else push();
  const [f,b]=faces(cur);
  $('studyArea').innerHTML=`<div class="tag">${esc(cur.mat)} › ${esc(cur.tema)} · faltam ${queue.length}</div>${cur.src?`<div class="src">${esc(cur.src)}</div>`:''}<div class="cardbox" id="fc">${f}</div>
  <div id="act" class="row"><button class="btn pri" id="turn" style="width:100%">Mostrar resposta</button></div>`;
@@ -117,7 +121,7 @@ async function doImport(){const sel=new Set([...document.querySelectorAll('#impP
  if(false){let i=0;const w=async()=>{while(i<l.length){const c=l[i++];try{await col.doc(c.id).set(c)}catch(e){}st.textContent=`Salvando na sua conta… ${Math.min(i,l.length)}/${l.length}`}};await Promise.all([w(),w(),w(),w()])}
  st.textContent=`✓ ${l.length} cartões importados.`;pending=[]}
 // ---- início
-function refresh(){fillAll();renderList();build()}
+function refresh(){fillAll();applyUI();renderList();build()}
 $('status').textContent='salvo neste navegador';
 
 // ===== Histórico de respostas =====
@@ -164,11 +168,11 @@ document.getElementById('love').onclick=()=>{const m=document.getElementById('lo
 
 // ===== Salvar no servidor (Cloudflare KV) =====
 let pushT=null,serverOk=false;
-function push(){clearTimeout(pushT);pushT=setTimeout(async()=>{try{const r=await fetch('api/state',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({v:1,docs:[...docs.values()],hist,at:Date.now()})});
+function push(){clearTimeout(pushT);pushT=setTimeout(async()=>{try{const r=await fetch('api/state',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({v:1,docs:[...docs.values()],hist,ui:UI,at:Date.now()})});
  serverOk=r.ok;$('status').textContent=r.ok?'☁️ salvo no site · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'⚠️ não salvou no site (salvo só neste aparelho)'}catch(e){$('status').textContent='⚠️ sem internet, salvo neste aparelho'}},1500)}
 async function pull(){try{const r=await fetch('api/state',{cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();serverOk=true;
  (j.docs||[]).forEach(d=>{const cur=docs.get(d.id);if(!cur||(d.u||0)>=(cur.u||0))docs.set(d.id,d)});
- const seen=new Set(hist.map(h=>h.id+'|'+h.ts));(j.hist||[]).forEach(h=>{if(!seen.has(h.id+'|'+h.ts))hist.push(h)});hist.sort((a,b)=>a.ts-b.ts);
+ if(j.ui&&(j.ui.u||0)>(UI.u||0)){UI=j.ui;try{localStorage.setItem('fc_ui',JSON.stringify(UI))}catch(e){}}const seen=new Set(hist.map(h=>h.id+'|'+h.ts));(j.hist||[]).forEach(h=>{if(!seen.has(h.id+'|'+h.ts))hist.push(h)});hist.sort((a,b)=>a.ts-b.ts);
  lsSave();try{localStorage.setItem(HK,JSON.stringify(hist))}catch(e){}cards=fromDocs([...docs.values()]);refresh();checkDue();
  $('status').textContent='☁️ progresso carregado do site';push()}catch(e){$('status').textContent='⚠️ não consegui falar com o site, usando o que está neste aparelho'}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
